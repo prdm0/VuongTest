@@ -23,24 +23,24 @@
 #' @importFrom magrittr "%>%"
 #' @return Valor da estatística do teste da razão de verossimilhança generalizada.
 #' @examples
-#'  pdf_w <- function(par, x, var = NULL){
-#'      alpha <- par[1]
-#'      beta <- par[2]
-#'      dweibull(x, shape = alpha, scale = beta)
-#'   }
+#' pdf_w <- function(par, x, var = NULL){
+#'    alpha <- par[1]
+#'    beta <- par[2]
+#'    dweibull(x, shape = alpha, scale = beta)
+#' }
 #'
-#'   rw <- function(n = 1L, alpha, beta){
+#' rw <- function(n = 1L, alpha, beta){
 #'    rweibull(n = n, shape = alpha, scale = beta)
-#'   }
+#' }
 #'
-#'   data <- rw(n = 100L, alpha = 1, beta = 1)
+#' data <- rw(n = 100L, alpha = 1, beta = 1)
 #'
-#'   lrt(f = pdf_w, data = data, kicks = c(1, 1), par0 = list("beta", 1))
+#' lrt(f = pdf_w, data = data, kicks = c(1, 1), par0 = list("beta", 1))
 #' @export
 lrt <- function(f, data, kicks, par0 = NULL, ...) {
   if (is.null(par0))
     stop("Informar uma lista informando o parâmetro e o valor sob a hipótese nula.")
-  
+
   body(f) %<>% as.list %>%
     append(quote(if (is.list(var))
       eval(parse(
@@ -48,17 +48,17 @@ lrt <- function(f, data, kicks, par0 = NULL, ...) {
       ))), length(body(f)) - 1L) %>%
     as.call %>%
     as.expression
-  
+
   # Log-Likelihood under the null hypothesis. -----------------------------------
   log_lik_h0 <- function(par, x) {
     -sum(log(f(par, x, var = par0)))
   }
-  
+
   # Unrestricted log-likelihood. -----------------------------------
   log_lik <- function(par, x) {
     -sum(log(f(par, x)))
   }
-  
+
   myoptim <-
     function(...)
       tryCatch(
@@ -66,22 +66,22 @@ lrt <- function(f, data, kicks, par0 = NULL, ...) {
         error = function(e)
           NA
       )
-  
+
   par_h0 <- myoptim(par = kicks, fn = log_lik_h0, x = data, ...)
-  
+
   if (!is.list(par_h0) || par_h0$convergence != 0L)
     return(NA)
-  
+
   par_h <- myoptim(par = kicks, fn = log_lik, x = data, ...)
-  
+
   if (!is.list(par_h) || par_h$convergence != 0L)
     return(NA)
-  
+
   lambda <-
     2 * (log_lik_h0(par = par_h0$par, x = data) - log_lik(par_h$par, x = data))
-  
+
   lambda[lambda < 0] <- 0
-  
+
   # Estatística de razão de verossimilhança:
   lambda
 }
